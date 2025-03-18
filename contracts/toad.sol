@@ -5,6 +5,7 @@ pragma solidity >=0.8.2 <0.9.0;
 import "@openzeppelin/contracts/governance/Governor.sol";
 import "@openzeppelin/contracts/governance/IGovernor.sol";
 import "forge-std/console2.sol";
+import "@openzeppelin/contracts/governance/IVotes.sol";
 
 /**
  * @title TOAD
@@ -327,19 +328,24 @@ contract TOAD {
         for (uint i = 0; i < _tallyIds.length; i++) {
             uint index = proposalList[_tallyIds[i]];
             require(index < proposals.length, "Proposal index out of bounds");
-            // TODO: Get TOAD's total voting power
-            uint enablePower = 0;
+
+            // Get TOAD's voting power at the valid block
+            uint enablePower = IVotes(address(tallyGovernor.token()))
+                .getPastVotes(toad, proposals[index].validBlock);
+
+            // Calculate total voting power of disablers at the valid block
             uint disablePower = 0;
-            // TODO: disable power should be a function of all the valid members in the disable array. Maybe based on voting power?
             for (uint j = 0; j < proposals[index].disablers.length; j++) {
-                // TODO: check if the member is a delegate at the validBlock
-                ++disablePower;
+                address disabler = proposals[index].disablers[j];
+                // Only count voting power if the disabler is a member at the valid block
+                if (isMember(disabler, _tallyIds[i])) {
+                    disablePower += IVotes(address(tallyGovernor.token()))
+                        .getPastVotes(disabler, proposals[index].validBlock);
+                }
             }
-            if (disablePower > enablePower) {
-                results[i] = false;
-                continue;
-            }
-            results[i] = true;
+
+            // TOAD can vote if its voting power is greater than the total voting power of disablers
+            results[i] = enablePower > disablePower;
         }
         return results;
     }

@@ -351,22 +351,97 @@ contract TOADTest is Test {
     }
 
     function testCanVote() public {
-        // First discover a proposal
-        uint[] memory tallyIds = new uint[](1);
-        tallyIds[0] = 1;
-        uint[] memory votingPeriods = new uint[](1);
-        votingPeriods[0] = 1 days;
+        console2.log("Starting testCanVote...");
 
+        // Set up Tally Governor
+        console2.log("Setting up Tally Governor...");
+        toad.setTallyGovernor(address(mockGovernor));
+
+        // Mint and delegate tokens to TOAD and users
+        console2.log("Minting and delegating tokens...");
+        mockToken.mint(toadAddress, 2000); // TOAD has more voting power
+        mockToken.mint(user1, 1000);
+        mockToken.mint(user2, 1000);
+
+        // Delegate voting power
+        vm.prank(toadAddress);
+        mockToken.delegate(toadAddress);
+        vm.prank(user1);
+        mockToken.delegate(user1);
+        vm.prank(user2);
+        mockToken.delegate(user2);
+
+        // Create a proposal
+        console2.log("Creating proposal...");
+        address[] memory targets = new address[](1);
+        targets[0] = address(0);
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = "";
+        uint256 newProposalId = mockGovernor.propose(
+            targets,
+            values,
+            calldatas,
+            "Proposal"
+        );
+
+        // Discover proposal in TOAD
+        console2.log("Discovering proposal in TOAD...");
+        uint[] memory tallyIds = new uint[](1);
+        tallyIds[0] = newProposalId;
+        uint[] memory votingPeriods = new uint[](1);
+        votingPeriods[0] = 100;
         vm.prank(toadAddress);
         toad.discoverProposals(tallyIds, votingPeriods);
 
         // Set valid block interval
         toad.setValidBlockInterval(100);
 
-        // Check if can vote
+        // Test case 1: No disablers
+        console2.log("Testing case 1: No disablers...");
         bool[] memory results = toad.canVote(tallyIds);
-        assertEq(results.length, 1);
-        assertEq(results[0], true); // Currently always returns true as enablePower is hardcoded to 0
+        assertEq(
+            results[0],
+            true,
+            "TOAD should be able to vote when there are no disablers"
+        );
+
+        // Test case 2: One disabler with less voting power
+        console2.log("Testing case 2: One disabler with less voting power...");
+        vm.prank(user1);
+        toad.disable(tallyIds);
+        results = toad.canVote(tallyIds);
+        assertEq(
+            results[0],
+            true,
+            "TOAD should be able to vote when its voting power is greater"
+        );
+
+        // Test case 3: Multiple disablers with combined voting power greater than TOAD
+        console2.log(
+            "Testing case 3: Multiple disablers with combined voting power greater than TOAD..."
+        );
+        vm.prank(user2);
+        toad.disable(tallyIds);
+        results = toad.canVote(tallyIds);
+        assertEq(
+            results[0],
+            false,
+            "TOAD should not be able to vote when combined disable power is greater"
+        );
+
+        // Test case 4: Disabler who is not a member
+        console2.log("Testing case 4: Disabler who is not a member...");
+        address nonMember = makeAddr("nonMember");
+        vm.prank(nonMember);
+        toad.disable(tallyIds);
+        results = toad.canVote(tallyIds);
+        assertEq(
+            results[0],
+            false,
+            "TOAD should not be able to vote when combined disable power is greater, even with non-member disabler"
+        );
     }
 
     function testSetTallyGovernor() public {
