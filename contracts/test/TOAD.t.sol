@@ -3,7 +3,7 @@ pragma solidity >=0.8.2 <0.9.0;
 
 import {Test} from "forge-std/Test.sol";
 import {console2} from "forge-std/console2.sol";
-import {TOAD, ResultsAnnounced, AdminChanged, ToadChanged, ValidBlockIntervalChanged, TallyGovernorChanged, Proposal, Answer} from "../toad.sol";
+import {TOAD, ResultsAnnounced, AdminChanged, ToadChanged, ValidBlockIntervalChanged, TallyGovernorChanged, Proposal, ProposalView, Answer, CallerNotAdmin, CallerNotToad, CallerNotMember, ZeroAddressNotAllowed, ValidBlockIntervalMustBeGreaterThanZero, ArrayLengthsMustMatch, NoProposalsToAnswer, ProposalNotActiveForAnswering, ResultsAlreadyAnnounced, NoProposalsToClear, ProposalIndexOutOfBounds, ProposalStillActive, CallerHasNoVotingPower, ProposalNotActiveForDisabling, CallerAlreadyDisablingProposal, MemberHasNoVotingPower, EmptyArrayNotAllowed, TallyGovernorNotSet} from "../toad.sol";
 import "./mocks/MockGovernor.sol";
 import "./mocks/MockToken.sol";
 
@@ -13,9 +13,11 @@ contract TOADTest is Test {
     address public toadAddress;
     address public user1;
     address public user2;
+    address public user3;
 
     MockGovernor public mockGovernor;
     MockToken public mockToken;
+    MockToken public token;
     uint256 public proposalId;
     uint256 public proposalId2;
 
@@ -24,43 +26,34 @@ contract TOADTest is Test {
         toadAddress = makeAddr("toad");
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
+        user3 = makeAddr("user3");
 
         toad = new TOAD(toadAddress);
         mockToken = new MockToken();
         mockGovernor = new MockGovernor(IVotes(address(mockToken)));
 
-        // Create first fake proposal data
-        address[] memory targets1 = new address[](1);
-        targets1[0] = address(0);
-        uint256[] memory values1 = new uint256[](1);
-        values1[0] = 0;
-        bytes[] memory calldatas1 = new bytes[](1);
-        calldatas1[0] = "";
-        string memory description1 = "Test Proposal 1";
-
-        // Create second fake proposal data
-        address[] memory targets2 = new address[](1);
-        targets2[0] = address(0);
-        uint256[] memory values2 = new uint256[](1);
-        values2[0] = 0;
-        bytes[] memory calldatas2 = new bytes[](1);
-        calldatas2[0] = "";
-        string memory description2 = "Test Proposal 2";
+        // Create test proposals
+        address[] memory targets = new address[](1);
+        targets[0] = address(0);
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = "";
 
         proposalId = mockGovernor.propose(
-            targets1,
-            values1,
-            calldatas1,
-            description1
+            targets,
+            values,
+            calldatas,
+            "Test Proposal 1"
         );
         proposalId2 = mockGovernor.propose(
-            targets2,
-            values2,
-            calldatas2,
-            description2
+            targets,
+            values,
+            calldatas,
+            "Test Proposal 2"
         );
 
-        // Mint some tokens to users for testing
+        // Mint tokens to users
         mockToken.mint(user1, 1000);
         mockToken.mint(user2, 1000);
     }
@@ -98,36 +91,33 @@ contract TOADTest is Test {
 
     function test_RevertWhen_NonAdminSetsAdmin() public {
         vm.prank(user1);
-        vm.expectRevert("Only admin can call this function");
+        vm.expectRevert(CallerNotAdmin.selector);
         toad.setAdmin(user2);
     }
 
     function test_RevertWhen_NonAdminSetsToad() public {
         vm.prank(user1);
-        vm.expectRevert("Only admin can call this function");
+        vm.expectRevert(CallerNotAdmin.selector);
         toad.setToad(user2);
     }
 
     function test_RevertWhen_NonAdminSetsValidBlockInterval() public {
         vm.prank(user1);
-        vm.expectRevert("Only admin can call this function");
+        vm.expectRevert(CallerNotAdmin.selector);
         toad.setValidBlockInterval(100);
     }
 
     function testDiscoverProposals() public {
-        // First discover some initial proposals
-        uint[] memory initialTallyIds = new uint[](1);
-        initialTallyIds[0] = 1;
-        uint[] memory initialVotingPeriods = new uint[](1);
-        initialVotingPeriods[0] = 1 days;
+        uint[] memory tallyIds = new uint[](1);
+        tallyIds[0] = 1;
+        uint[] memory votingPeriods = new uint[](1);
+        votingPeriods[0] = 1 days;
 
         vm.prank(toadAddress);
-        toad.discoverProposals(initialTallyIds, initialVotingPeriods);
+        toad.discoverProposals(tallyIds, votingPeriods);
 
-        // Advance block number past the voting period
         vm.roll(block.number + 2 days);
 
-        // Create new proposals
         address[] memory targets = new address[](2);
         targets[0] = address(0);
         targets[1] = address(0);
@@ -154,20 +144,18 @@ contract TOADTest is Test {
             descriptions[1]
         );
 
-        // Now test discovering new proposals
-        uint[] memory tallyIds = new uint[](2);
+        tallyIds = new uint[](2);
         tallyIds[0] = newProposalId1;
         tallyIds[1] = newProposalId2;
-        uint[] memory votingPeriods = new uint[](2);
+        votingPeriods = new uint[](2);
         votingPeriods[0] = 1 days;
         votingPeriods[1] = 2 days;
 
         vm.prank(toadAddress);
         toad.discoverProposals(tallyIds, votingPeriods);
 
-        // Verify the new proposals
-        Proposal memory proposal1 = toad.getProposal(newProposalId1);
-        Proposal memory proposal2 = toad.getProposal(newProposalId2);
+        ProposalView memory proposal1 = toad.getProposal(newProposalId1);
+        ProposalView memory proposal2 = toad.getProposal(newProposalId2);
 
         assertEq(proposal1.tallyId, newProposalId1);
         assertEq(uint(proposal1.answer), uint(Answer.ABSTAIN));
@@ -181,96 +169,60 @@ contract TOADTest is Test {
     }
 
     function testAnswer() public {
-        console2.log("Setting up test...");
-        // Set up Tally Governor
         toad.setTallyGovernor(address(mockGovernor));
-
-        console2.log("Minting and delegating tokens...");
-        // Mint tokens to admin (proposer) and users
         mockToken.mint(address(this), 1000);
         mockToken.mint(user1, 1000);
 
-        // Delegate voting power before creating proposals
         mockToken.delegate(address(this));
-        vm.startPrank(user1);
+        vm.prank(user1);
         mockToken.delegate(user1);
-        vm.stopPrank();
 
-        // Move forward one block to ensure voting power is set
         vm.roll(block.number + 1);
-        console2.log("Current block after delegation: %d", block.number);
 
-        // Create proposal data
         address[] memory targets = new address[](1);
         targets[0] = address(0);
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
         bytes[] memory calldatas = new bytes[](1);
         calldatas[0] = "";
-        string memory description = "Test Proposal";
 
-        // Create proposal
-        console2.log("Creating proposal...");
         proposalId = mockGovernor.propose(
             targets,
             values,
             calldatas,
-            description
+            "Test Proposal"
         );
-        console2.log("Proposal created with ID: %d", proposalId);
-        console2.log("Current block: %d", block.number);
         uint256 snapshot = mockGovernor.proposalSnapshot(proposalId);
         uint256 deadline = mockGovernor.proposalDeadline(proposalId);
-        console2.log("Proposal snapshot: %d, deadline: %d", snapshot, deadline);
 
-        // Wait for proposal to be active
         vm.roll(snapshot + 1);
-        console2.log("Current block after delay: %d", block.number);
-        console2.log(
-            "Proposal state: %d",
-            uint(mockGovernor.state(proposalId))
-        );
 
-        // Discover proposal in TOAD
-        console2.log("Discovering proposal in TOAD...");
-        uint[] memory tallyIds = new uint[](1);
-        tallyIds[0] = proposalId;
+        uint[] memory discoveryIds = new uint[](1);
+        discoveryIds[0] = proposalId;
         uint[] memory votingPeriods = new uint[](1);
-        votingPeriods[0] = 100; // 100 blocks
+        votingPeriods[0] = 10;
 
         vm.prank(toadAddress);
-        toad.discoverProposals(tallyIds, votingPeriods);
-        console2.log("Proposal discovered in TOAD");
+        toad.discoverProposals(discoveryIds, votingPeriods);
 
-        // Set valid block interval
-        toad.setValidBlockInterval(100);
-        console2.log("Set valid block interval to: %d", uint(100));
+        toad.setValidBlockInterval(5);
 
-        // Vote on proposal
         vm.prank(user1);
-        mockGovernor.castVote(proposalId, 1); // 1 = For
-        console2.log("User1 voted FOR on proposal");
+        mockGovernor.castVote(proposalId, 1);
 
-        // Wait for voting period to end
         vm.roll(deadline + 1);
-        console2.log("Current block after voting period: %d", block.number);
 
-        // Answer proposal
-        console2.log("Answering proposal...");
         Answer[] memory answers = new Answer[](1);
         answers[0] = Answer.FOR;
 
         vm.prank(toadAddress);
-        toad.answer(tallyIds, answers);
-        console2.log("Proposal answered");
+        toad.answer(discoveryIds, answers);
 
-        // Verify answer
-        Proposal memory proposal = toad.getProposal(proposalId);
+        ProposalView memory proposal = toad.getProposal(proposalId);
         assertEq(uint(proposal.answer), uint(Answer.FOR));
     }
 
     function testAnnounceResults() public {
-        // First discover and answer a proposal
         uint[] memory tallyIds = new uint[](1);
         tallyIds[0] = 1;
         uint[] memory votingPeriods = new uint[](1);
@@ -287,9 +239,9 @@ contract TOADTest is Test {
         vm.prank(toadAddress);
         toad.answer(tallyIds, answers);
 
-        // Announce results using array index 0
         uint[] memory indexes = new uint[](1);
         indexes[0] = 0;
+        vm.roll(toad.getProposal(1).validBlock + 5);
 
         vm.expectEmit(true, true, true, true);
         emit ResultsAnnounced(1, Answer.FOR);
@@ -297,34 +249,51 @@ contract TOADTest is Test {
         vm.prank(toadAddress);
         toad.announceResults(indexes);
 
-        Proposal memory proposal = toad.getProposal(1);
+        ProposalView memory proposal = toad.getProposal(1);
         assertEq(proposal.announced, true);
     }
 
     function testDisable() public {
-        // First discover a proposal
+        toad.setTallyGovernor(address(mockGovernor));
+        vm.roll(block.number + 1);
+        uint decidingPower = 1;
+        mockToken.mint(user1, decidingPower);
         uint[] memory tallyIds = new uint[](1);
         tallyIds[0] = 1;
         uint[] memory votingPeriods = new uint[](1);
-        votingPeriods[0] = 1 days;
+        votingPeriods[0] = 5;
 
         vm.prank(toadAddress);
         toad.discoverProposals(tallyIds, votingPeriods);
 
-        // Set valid block interval
-        toad.setValidBlockInterval(100);
+        toad.setValidBlockInterval(2);
 
-        // Disable TOAD
         vm.prank(user1);
-        toad.disable(tallyIds);
+        toad.setDisablePower(tallyIds);
 
-        Proposal memory proposal = toad.getProposal(1);
-        assertEq(proposal.disablers.length, 1);
-        assertEq(proposal.disablers[0], user1);
+        vm.prank(user1);
+        mockToken.delegate(toadAddress);
+        vm.prank(user2);
+        mockToken.delegate(toadAddress);
+
+        vm.roll(block.number + 1);
+
+        vm.prank(user1);
+        toad.toggle(tallyIds, user1);
+
+        ProposalView memory proposal = toad.getProposal(1);
+        assertEq(proposal.disablePower, 1000 + decidingPower);
+
+        vm.roll(proposal.validBlock + 1);
+        bool[] memory results = toad.canVote(tallyIds);
+        assertEq(
+            results[0],
+            false,
+            "TOAD should not be able to vote when disabled"
+        );
     }
 
     function testClearProposal() public {
-        // First discover a proposal
         uint[] memory tallyIds = new uint[](1);
         tallyIds[0] = 1;
         uint[] memory votingPeriods = new uint[](1);
@@ -333,40 +302,143 @@ contract TOADTest is Test {
         vm.prank(toadAddress);
         toad.discoverProposals(tallyIds, votingPeriods);
 
-        // Fast forward past voting period
         vm.roll(block.number + 2 days);
 
-        // Clear proposal
         vm.prank(toadAddress);
         toad.clearProposalByTallyId(tallyIds[0]);
 
-        // Verify proposal is cleared
-        Proposal memory proposal = toad.getProposal(0);
+        ProposalView memory proposal = toad.getProposal(1);
         assertEq(proposal.tallyId, 0);
         assertEq(proposal.discoveredAt, 0);
         assertEq(proposal.validBlock, 0);
         assertEq(proposal.votingPeriod, 0);
         assertEq(proposal.announced, false);
-        assertEq(proposal.disablers.length, 0);
+        assertEq(proposal.disablePower, 0);
     }
 
-    function testCanVote() public {
-        // First discover a proposal
-        uint[] memory tallyIds = new uint[](1);
-        tallyIds[0] = 1;
-        uint[] memory votingPeriods = new uint[](1);
-        votingPeriods[0] = 1 days;
+    function testCanVote_NoDisablers() public {
+        toad.setTallyGovernor(address(mockGovernor));
+        mockToken.mint(toadAddress, 2000);
+        mockToken.mint(user1, 1000);
+        mockToken.mint(user2, 2000);
+
+        vm.roll(block.number + 1);
 
         vm.prank(toadAddress);
-        toad.discoverProposals(tallyIds, votingPeriods);
+        mockToken.delegate(toadAddress);
+        vm.prank(user1);
+        mockToken.delegate(toadAddress);
+        vm.prank(user2);
+        mockToken.delegate(toadAddress);
 
-        // Set valid block interval
-        toad.setValidBlockInterval(100);
+        vm.roll(block.number + 1);
 
-        // Check if can vote
-        bool[] memory results = toad.canVote(tallyIds);
-        assertEq(results.length, 1);
-        assertEq(results[0], true); // Currently always returns true as enablePower is hardcoded to 0
+        address[] memory targets = new address[](1);
+        targets[0] = address(0);
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = "";
+
+        uint newProposalId = mockGovernor.propose(
+            targets,
+            values,
+            calldatas,
+            ""
+        );
+        uint snapshot = mockGovernor.proposalSnapshot(newProposalId);
+
+        vm.roll(snapshot + 1);
+
+        toad.setValidBlockInterval(5);
+
+        uint[] memory discoveryIds = new uint[](1);
+        discoveryIds[0] = newProposalId;
+        uint[] memory votingPeriods = new uint[](1);
+        votingPeriods[0] = 5;
+
+        vm.prank(toadAddress);
+        toad.discoverProposals(discoveryIds, votingPeriods);
+
+        ProposalView memory proposal = toad.getProposal(newProposalId);
+        vm.roll(proposal.validBlock + 2);
+
+        bool[] memory results = toad.canVote(discoveryIds);
+        assertEq(
+            results[0],
+            true,
+            "TOAD should be able to vote with no disablers"
+        );
+    }
+
+    function testCanVote_WithDisabler() public {
+        toad.setTallyGovernor(address(mockGovernor));
+        mockToken.mint(toadAddress, 2000);
+        mockToken.mint(user1, 1000);
+        mockToken.mint(user2, 2000);
+        mockToken.mint(user3, 10000);
+
+        vm.roll(block.number + 1);
+
+        vm.prank(toadAddress);
+        mockToken.delegate(toadAddress);
+        vm.prank(user1);
+        mockToken.delegate(toadAddress);
+        vm.prank(user2);
+        mockToken.delegate(toadAddress);
+
+        vm.roll(block.number + 1);
+
+        address[] memory targets = new address[](1);
+        targets[0] = address(0);
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = "";
+
+        uint newProposalId = mockGovernor.propose(
+            targets,
+            values,
+            calldatas,
+            ""
+        );
+        uint snapshot = mockGovernor.proposalSnapshot(newProposalId);
+
+        vm.roll(snapshot + 1);
+
+        toad.setValidBlockInterval(5);
+
+        uint[] memory discoveryIds = new uint[](1);
+        discoveryIds[0] = newProposalId;
+        uint[] memory votingPeriods = new uint[](1);
+        votingPeriods[0] = 5;
+
+        vm.prank(toadAddress);
+        toad.discoverProposals(discoveryIds, votingPeriods);
+
+        ProposalView memory proposal = toad.getProposal(newProposalId);
+        vm.roll(proposal.validBlock - 3);
+
+        vm.roll(block.number + 1);
+
+        vm.prank(user3);
+        toad.setDisablePower(discoveryIds);
+
+        vm.prank(user3);
+        mockToken.delegate(toadAddress);
+
+        vm.prank(user3);
+        toad.toggle(discoveryIds, user3);
+
+        vm.roll(block.number + 1);
+        vm.roll(proposal.validBlock + 2);
+
+        bool[] memory results = toad.canVote(discoveryIds);
+        assertEq(
+            results[0],
+            false,
+            "TOAD should not be able to vote when disabled by a delegator with more voting power"
+        );
     }
 
     function testSetTallyGovernor() public {
@@ -379,137 +451,309 @@ contract TOADTest is Test {
 
     function test_RevertWhen_NonAdminSetsTallyGovernor() public {
         vm.prank(user1);
-        vm.expectRevert("Only admin can call this function");
+        vm.expectRevert(CallerNotAdmin.selector);
         toad.setTallyGovernor(address(mockGovernor));
     }
 
     function test_RevertWhen_ZeroAddressSetsTallyGovernor() public {
-        vm.expectRevert("Zero address not allowed");
+        vm.expectRevert(ZeroAddressNotAllowed.selector);
         toad.setTallyGovernor(address(0));
     }
 
-    function testIsMember() public {
-        console2.log("Starting testIsMember...");
-
-        // Set up Tally Governor
-        console2.log("Setting up Tally Governor...");
-        toad.setTallyGovernor(address(mockGovernor));
-
-        // Mint and delegate tokens
-        console2.log("Minting and delegating tokens to user1...");
-        mockToken.mint(user1, 1000);
-        vm.prank(user1);
-        mockToken.delegate(user1);
-        console2.log("User1 voting power: %d", mockToken.getVotes(user1));
-
-        // Create a proposal and vote
-        console2.log("Creating proposal...");
-        address[] memory targets = new address[](1);
-        targets[0] = address(0);
-        uint256[] memory values = new uint256[](1);
-        values[0] = 0;
-        bytes[] memory calldatas = new bytes[](1);
-        calldatas[0] = "";
-        uint256 newProposalId = mockGovernor.propose(
-            targets,
-            values,
-            calldatas,
-            "Proposal"
-        );
-        console2.log("Proposal created with ID: %d", newProposalId);
-
-        // Wait for proposal to be active
-        uint256 snapshot = mockGovernor.proposalSnapshot(newProposalId);
-        console2.log("Proposal snapshot block: %d", snapshot);
-        vm.roll(snapshot + 1);
-        console2.log("Current block after delay: %d", block.number);
-
-        // Vote on the proposal
-        console2.log("User1 voting on proposal...");
-        vm.prank(user1);
-        mockGovernor.castVote(newProposalId, 1); // 1 = For
-        console2.log("Vote cast successfully");
-
-        // Discover proposal in TOAD
-        console2.log("Discovering proposal in TOAD...");
-        uint[] memory tallyIds = new uint[](1);
-        tallyIds[0] = newProposalId;
-        uint[] memory votingPeriods = new uint[](1);
-        votingPeriods[0] = 100;
-        vm.prank(toadAddress);
-        toad.discoverProposals(tallyIds, votingPeriods);
-
-        // Test membership check
-        console2.log("Testing membership check...");
-        assertEq(mockGovernor.hasVoted(newProposalId, user1), true);
-        assertEq(mockGovernor.hasVoted(newProposalId, user2), false);
-        assertEq(toad.isMember(user1, newProposalId), true);
-        assertEq(toad.isMember(user2, newProposalId), false);
-        console2.log("Membership checks completed successfully");
-    }
-
-    function testIsMemberNow() public {
-        console2.log("Starting testIsMemberNow...");
-
-        // Set up Tally Governor
-        console2.log("Setting up Tally Governor...");
-        toad.setTallyGovernor(address(mockGovernor));
-
-        // Mint and delegate tokens
-        console2.log("Minting and delegating tokens to user1...");
-        mockToken.mint(user1, 1000);
-        vm.prank(user1);
-        mockToken.delegate(user1);
-        console2.log("User1 voting power: %d", mockToken.getVotes(user1));
-
-        // Create a proposal and vote
-        console2.log("Creating proposal...");
-        address[] memory targets = new address[](1);
-        targets[0] = address(0);
-        uint256[] memory values = new uint256[](1);
-        values[0] = 0;
-        bytes[] memory calldatas = new bytes[](1);
-        calldatas[0] = "";
-        uint256 newProposalId = mockGovernor.propose(
-            targets,
-            values,
-            calldatas,
-            "Proposal"
-        );
-        console2.log("Proposal created with ID: %d", newProposalId);
-
-        // Wait for proposal to be active
-        uint256 snapshot = mockGovernor.proposalSnapshot(newProposalId);
-        console2.log("Proposal snapshot block: %d", snapshot);
-        vm.roll(snapshot + 1);
-        console2.log("Current block after delay: %d", block.number);
-
-        // Vote on the proposal
-        console2.log("User1 voting on proposal...");
-        vm.prank(user1);
-        mockGovernor.castVote(newProposalId, 1); // 1 = For
-        console2.log("Vote cast successfully");
-
-        // Discover proposal in TOAD
-        console2.log("Discovering proposal in TOAD...");
-        uint[] memory tallyIds = new uint[](1);
-        tallyIds[0] = newProposalId;
-        uint[] memory votingPeriods = new uint[](1);
-        votingPeriods[0] = 100;
-        vm.prank(toadAddress);
-        toad.discoverProposals(tallyIds, votingPeriods);
-
-        // Test current membership check
-        console2.log("Testing current membership check...");
-        assertEq(mockGovernor.hasVoted(newProposalId, user1), true);
-        assertEq(mockGovernor.hasVoted(newProposalId, user2), false);
-        assertEq(toad.isMemberNow(user1), true);
-        assertEq(toad.isMemberNow(user2), false);
-        console2.log("Current membership checks completed successfully");
-    }
-
     function test_RevertWhen_TallyGovernorNotSet() public {
-        vm.expectRevert("Tally Governor not set");
-        toad.isMember(user1, 100);
+        vm.expectRevert(TallyGovernorNotSet.selector);
+        toad.isMember(user1);
+    }
+
+    function test_RevertWhen_ClearingNonExistentProposal() public {
+        vm.prank(toadAddress);
+        vm.expectRevert(ProposalIndexOutOfBounds.selector);
+        toad.clearProposalByTallyId(999);
+    }
+
+    function test_RevertWhen_ClearingActiveProposal() public {
+        uint[] memory tallyIds = new uint[](1);
+        tallyIds[0] = 1;
+        uint[] memory votingPeriods = new uint[](1);
+        votingPeriods[0] = 1 days;
+
+        vm.prank(toadAddress);
+        toad.discoverProposals(tallyIds, votingPeriods);
+
+        vm.prank(toadAddress);
+        vm.expectRevert(ProposalStillActive.selector);
+        toad.clearProposalByTallyId(tallyIds[0]);
+    }
+
+    function test_RevertWhen_AnsweringAfterValidBlock() public {
+        toad.setTallyGovernor(address(mockGovernor));
+        uint[] memory tallyIds = new uint[](1);
+        tallyIds[0] = 1;
+        uint[] memory votingPeriods = new uint[](1);
+        votingPeriods[0] = 5;
+
+        vm.prank(toadAddress);
+        toad.discoverProposals(tallyIds, votingPeriods);
+
+        toad.setValidBlockInterval(2);
+        vm.roll(toad.getProposal(1).validBlock + 3);
+
+        Answer[] memory answers = new Answer[](1);
+        answers[0] = Answer.FOR;
+
+        vm.prank(toadAddress);
+        vm.expectRevert(ProposalNotActiveForAnswering.selector);
+        toad.answer(tallyIds, answers);
+    }
+
+    function test_RevertWhen_AnnouncingResultsTwice() public {
+        uint[] memory tallyIds = new uint[](1);
+        tallyIds[0] = 1;
+        uint[] memory votingPeriods = new uint[](1);
+        votingPeriods[0] = 1 days;
+
+        vm.prank(toadAddress);
+        toad.discoverProposals(tallyIds, votingPeriods);
+
+        Answer[] memory answers = new Answer[](1);
+        answers[0] = Answer.FOR;
+
+        vm.prank(toadAddress);
+        toad.answer(tallyIds, answers);
+
+        uint[] memory indexes = new uint[](1);
+        indexes[0] = 0;
+
+        vm.prank(toadAddress);
+        toad.announceResults(indexes);
+
+        vm.prank(toadAddress);
+        vm.expectRevert(ResultsAlreadyAnnounced.selector);
+        toad.announceResults(indexes);
+    }
+
+    function test_RevertWhen_DiscoveringProposalsWithMismatchedArrays() public {
+        uint[] memory tallyIds = new uint[](2);
+        tallyIds[0] = 1;
+        tallyIds[1] = 2;
+        uint[] memory votingPeriods = new uint[](1);
+        votingPeriods[0] = 1 days;
+
+        vm.prank(toadAddress);
+        vm.expectRevert(ArrayLengthsMustMatch.selector);
+        toad.discoverProposals(tallyIds, votingPeriods);
+    }
+
+    function test_RevertWhen_SettingDisablePowerWithZeroVotingPower() public {
+        toad.setTallyGovernor(address(mockGovernor));
+        uint[] memory tallyIds = new uint[](1);
+        tallyIds[0] = 1;
+        uint[] memory votingPeriods = new uint[](1);
+        votingPeriods[0] = 5;
+
+        vm.prank(toadAddress);
+        toad.discoverProposals(tallyIds, votingPeriods);
+
+        vm.prank(user3); // user3 has no tokens
+        vm.expectRevert(CallerHasNoVotingPower.selector);
+        toad.setDisablePower(tallyIds);
+    }
+
+    function test_RevertWhen_SettingDisablePowerAfterValidBlock() public {
+        toad.setTallyGovernor(address(mockGovernor));
+        mockToken.mint(user1, 1000);
+        uint[] memory tallyIds = new uint[](1);
+        tallyIds[0] = 1;
+        uint[] memory votingPeriods = new uint[](1);
+        votingPeriods[0] = 5;
+
+        vm.prank(toadAddress);
+        toad.discoverProposals(tallyIds, votingPeriods);
+
+        toad.setValidBlockInterval(2);
+        vm.roll(toad.getProposal(1).validBlock + 3);
+
+        vm.prank(user1);
+        vm.expectRevert(ProposalNotActiveForDisabling.selector);
+        toad.setDisablePower(tallyIds);
+    }
+
+    function test_RevertWhen_SettingDisablePowerTwice() public {
+        toad.setTallyGovernor(address(mockGovernor));
+        mockToken.mint(user1, 1000);
+        uint[] memory tallyIds = new uint[](1);
+        tallyIds[0] = 1;
+        uint[] memory votingPeriods = new uint[](1);
+        votingPeriods[0] = 5;
+
+        vm.prank(toadAddress);
+        toad.discoverProposals(tallyIds, votingPeriods);
+
+        // First set disable power
+        vm.prank(user1);
+        toad.setDisablePower(tallyIds);
+
+        // Confirm the disable power
+        vm.prank(user1);
+        toad.toggle(tallyIds, user1);
+
+        // Try to set disable power again - should revert
+        vm.prank(user1);
+        vm.expectRevert(CallerAlreadyDisablingProposal.selector);
+        toad.setDisablePower(tallyIds);
+    }
+
+    function test_RevertWhen_TogglingNonExistentProposal() public {
+        toad.setTallyGovernor(address(mockGovernor));
+        mockToken.mint(user1, 1000);
+        uint[] memory tallyIds = new uint[](1);
+        tallyIds[0] = 999; // Non-existent proposal
+
+        vm.prank(user1);
+        vm.expectRevert(MemberHasNoVotingPower.selector);
+        toad.toggle(tallyIds, user1);
+    }
+
+    function test_RevertWhen_TogglingNonMember() public {
+        toad.setTallyGovernor(address(mockGovernor));
+        mockToken.mint(user1, 1000);
+        uint[] memory tallyIds = new uint[](1);
+        tallyIds[0] = 1;
+        uint[] memory votingPeriods = new uint[](1);
+        votingPeriods[0] = 5;
+
+        vm.prank(toadAddress);
+        toad.discoverProposals(tallyIds, votingPeriods);
+
+        vm.prank(user1);
+        toad.setDisablePower(tallyIds);
+
+        vm.prank(user2); // user2 hasn't delegated to TOAD
+        vm.expectRevert(MemberHasNoVotingPower.selector);
+        toad.toggle(tallyIds, user2);
+    }
+
+    function test_RevertWhen_CheckingMemberStatusBeforeTallyGovernor() public {
+        vm.expectRevert(TallyGovernorNotSet.selector);
+        toad.isMember(user1);
+    }
+
+    function test_DisablePowerAfterDelegation() public {
+        toad.setTallyGovernor(address(mockGovernor));
+        uint[] memory tallyIds = new uint[](1);
+        tallyIds[0] = 1;
+        uint[] memory votingPeriods = new uint[](1);
+        votingPeriods[0] = 5;
+
+        vm.prank(toadAddress);
+        toad.discoverProposals(tallyIds, votingPeriods);
+
+        // First delegate to TOAD
+        vm.prank(user1);
+        mockToken.delegate(toadAddress);
+
+        // Then set disable power
+        vm.prank(user1);
+        toad.setDisablePower(tallyIds);
+
+        // Finally toggle
+        vm.prank(user1);
+        toad.toggle(tallyIds, user1);
+
+        ProposalView memory proposal = toad.getProposal(1);
+        assertEq(proposal.disablePower, 1000);
+    }
+
+    function test_DisablePowerAfterRevokingDelegation() public {
+        toad.setTallyGovernor(address(mockGovernor));
+        mockToken.mint(user1, 1000);
+        uint[] memory tallyIds = new uint[](1);
+        tallyIds[0] = 1;
+        uint[] memory votingPeriods = new uint[](1);
+        votingPeriods[0] = 5;
+
+        vm.prank(toadAddress);
+        toad.discoverProposals(tallyIds, votingPeriods);
+
+        // Set up disable power and delegate
+        vm.prank(user1);
+        toad.setDisablePower(tallyIds);
+        vm.prank(user1);
+        mockToken.delegate(toadAddress);
+        vm.prank(user1);
+        toad.toggle(tallyIds, user1);
+
+        // Revoke delegation
+        vm.prank(user1);
+        mockToken.delegate(user1);
+
+        // Toggle again - should remove disable power
+        vm.prank(user1);
+        toad.toggle(tallyIds, user1);
+
+        ProposalView memory proposal = toad.getProposal(1);
+        assertEq(proposal.disablePower, 0);
+    }
+
+    function test_CheckingVotingPowerBeforeValidBlock() public {
+        toad.setTallyGovernor(address(mockGovernor));
+        mockToken.mint(toadAddress, 2000);
+        uint[] memory tallyIds = new uint[](1);
+        tallyIds[0] = 1;
+        uint[] memory votingPeriods = new uint[](1);
+        votingPeriods[0] = 5;
+
+        vm.prank(toadAddress);
+        toad.discoverProposals(tallyIds, votingPeriods);
+
+        toad.setValidBlockInterval(2);
+        ProposalView memory proposal = toad.getProposal(1);
+
+        // Try to check voting power before valid block - should fail
+        vm.roll(proposal.validBlock - 1);
+        assertEq(toad.canVote(tallyIds)[0], false);
+
+        // Try to check voting power at valid block - should fail
+        vm.roll(proposal.validBlock);
+        assertEq(toad.canVote(tallyIds)[0], false);
+
+        // Check voting power after valid block - should succeed
+        vm.roll(proposal.validBlock + 1);
+        bool[] memory results = toad.canVote(tallyIds);
+        assertEq(
+            results[0],
+            true,
+            "Should be able to check voting power after valid block"
+        );
+    }
+
+    function test_MultipleProposalsWithDifferentValidBlocks() public {
+        toad.setTallyGovernor(address(mockGovernor));
+        mockToken.mint(toadAddress, 2000);
+
+        uint[] memory tallyIds = new uint[](2);
+        tallyIds[0] = 1;
+        tallyIds[1] = 2;
+        uint[] memory votingPeriods = new uint[](2);
+        votingPeriods[0] = 5;
+        votingPeriods[1] = 10;
+
+        vm.prank(toadAddress);
+        toad.discoverProposals(tallyIds, votingPeriods);
+
+        // Set valid block interval to 2 blocks (overriding the default 1 day)
+        toad.setValidBlockInterval(2);
+        ProposalView memory proposal1 = toad.getProposal(1);
+        ProposalView memory proposal2 = toad.getProposal(2);
+
+        // Move to after first proposal's valid block but before second
+        vm.roll(proposal1.validBlock + 1);
+
+        // Move to after both proposals' valid blocks
+        vm.roll(proposal2.validBlock + 1);
+
+        bool[] memory results = toad.canVote(tallyIds);
+        assertEq(results[0], true, "First proposal should be votable");
+        assertEq(results[1], true, "Second proposal should be votable");
     }
 }
