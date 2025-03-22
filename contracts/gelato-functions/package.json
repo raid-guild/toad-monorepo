@@ -1,0 +1,22 @@
+{
+    "name": "toad-gelato-functions",
+    "version": "1.0.0",
+    "description": "Gelato Functions for TOAD proposal discovery and answering",
+    "main": "index.js",
+    "scripts": {
+        "test": "jest",
+        "build": "tsc",
+        "start": "node dist/index.js"
+    },
+    "dependencies": {
+        "@gelatonetwork/ops-sdk": "^1.0.0",
+        "ethers": "^5.7.2",
+        "typescript": "^4.9.5",
+        "@types/node": "^18.15.11"
+    },
+    "devDependencies": {
+        "@types/jest": "^29.5.0",
+        "jest": "^29.5.0",
+        "ts-jest": "^29.1.0"
+    }
+}

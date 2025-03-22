@@ -26,7 +26,7 @@ cp .env.example .env
 
 2. Edit `.env` with your values:
 - `PRIVATE_KEY`: Your deployer private key (without 0x prefix)
-- `TOAD_ADDRESS`: The address that will control TOAD
+- `TOAD_ADDRESS`: The EOA that will control TOAD
 - `TALLY_GOVERNOR`: (Optional) The Tally Governor contract address
 - `VALID_BLOCK_INTERVAL`: (Optional) The valid block interval in blocks (default: 1 day)
 - Network RPC URLs and API keys for the networks you want to deploy to

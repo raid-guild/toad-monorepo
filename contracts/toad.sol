@@ -70,9 +70,9 @@ error TallyGovernorNotSet();
  * @dev Represents the possible voting options for proposals
  */
 enum Answer {
-    FOR,
-    AGAINST,
-    ABSTAIN
+    AGAINST, // 0 in Governor
+    FOR, // 1 in Governor
+    ABSTAIN // 2 in Governor
 }
 
 /**
@@ -331,6 +331,7 @@ contract TOAD {
             Proposal storage proposal = proposals[index];
             if (block.number >= proposal.validBlock)
                 revert ProposalNotActiveForAnswering();
+
             proposal.answer = _answers[i];
         }
     }
@@ -541,5 +542,51 @@ contract TOAD {
                 votingPeriod: proposal.votingPeriod,
                 announced: proposal.announced
             });
+    }
+
+    /**
+     * @dev Casts votes on proposals using stored answers
+     * @param _tallyIds Array of proposal IDs to vote on
+     * @notice Only TOAD can call this function
+     * @notice TOAD must be able to vote on the proposals (checked via canVote)
+     */
+    function vote(uint[] memory _tallyIds) external onlyToad {
+        if (_tallyIds.length == 0) revert EmptyArrayNotAllowed();
+
+        // Check if TOAD can vote on all proposals
+        bool[] memory canVoteResults = canVote(_tallyIds);
+        for (uint i = 0; i < _tallyIds.length; i++) {
+            if (!canVoteResults[i]) {
+                uint index = proposalList[_tallyIds[i]];
+                revert ProposalNotActiveForAnswering();
+            }
+        }
+
+        // Get answers for each proposal
+        Answer[] memory answers = new Answer[](_tallyIds.length);
+        for (uint i = 0; i < _tallyIds.length; i++) {
+            uint index = proposalList[_tallyIds[i]];
+            Proposal storage proposal = proposals[index];
+            answers[i] = proposal.answer;
+        }
+
+        // Cast votes using the Tally Governor
+        for (uint i = 0; i < _tallyIds.length; i++) {
+            // Map our Answer enum to Governor voting values
+            uint8 governorVote;
+            if (answers[i] == Answer.FOR) {
+                governorVote = 1; // FOR in Governor
+            } else if (answers[i] == Answer.AGAINST) {
+                governorVote = 0; // AGAINST in Governor
+            } else {
+                governorVote = 2; // ABSTAIN in Governor
+            }
+
+            tallyGovernor.castVoteWithReason(
+                _tallyIds[i],
+                governorVote,
+                "TOAD automated vote"
+            );
+        }
     }
 }
