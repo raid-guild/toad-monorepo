@@ -19,9 +19,17 @@ fi
 # Parse command line arguments
 MODE=$1
 
-# Install dependencies
-forge install OpenZeppelin/openzeppelin-contracts
-forge install foundry-rs/forge-std
+# Initialize git if not already initialized
+if [ ! -d ".git" ]; then
+    git init
+    git add .
+    git commit -m "Initial commit"
+fi
+
+# Clean install dependencies
+rm -rf lib
+forge install OpenZeppelin/openzeppelin-contracts --no-commit
+forge install foundry-rs/forge-std --no-commit
 
 # Build the contracts
 forge build
