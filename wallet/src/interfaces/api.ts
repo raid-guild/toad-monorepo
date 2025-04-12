@@ -3,13 +3,41 @@
  */
 export interface ApiProposal {
     id: string;
-    start?: { timestamp: string };
-    end?: { timestamp: string };
-    proposer?: { address: string };
-    metadata?: {
-        title?: string;
-        description?: string;
+    governor: {
+        id: string;
+        token: {
+            decimals: number;
+        };
+        parameters: {
+            proposalThreshold: string;
+        };
+        organization: {
+            id: string;
+            slug: string;
+        };
     };
+    metadata: {
+        title: string;
+        description: string;
+    };
+    start: {
+        timestamp: string;
+    };
+    end: {
+        timestamp: string;
+    };
+    createdAt: string;
+    voteStats: Array<{
+        type: string;
+        votesCount: string;
+        votersCount: number;
+        percent: number;
+    }>;
+    status: string;
+    proposer: {
+        address: string;
+    };
+    discovered: boolean;
 }
 
 /**

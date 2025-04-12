@@ -52,4 +52,5 @@ export const RPC_URL = process.env.RPC_URL!;
 export const TOAD = process.env.TOAD!;
 export const GOVERNOR_ADDRESS = process.env.GOVERNOR_ADDRESS!;
 export const TOAD_API_ENDPOINT = process.env.TOAD_API_ENDPOINT!;
-export const DEBUG_MODE = process.env.DEBUG_MODE === 'true'; 
+export const DEBUG_MODE = process.env.DEBUG_MODE === 'true';
+export const RATE_LIMIT = process.env.RATE_LIMIT ? parseInt(process.env.RATE_LIMIT) : 100; // Default to 100 requests per hour if not set 

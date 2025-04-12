@@ -1,5 +1,4 @@
 import { ToadService } from './services/ToadService';
-
 /**
  * Main entry point for the TOAD wallet application
  */

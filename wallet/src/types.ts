@@ -30,6 +30,7 @@ export interface ProposalData {
     voteStart: bigint;
     voteEnd: bigint;
     description: string;
+    discovered: boolean;
 }
 
 /**
