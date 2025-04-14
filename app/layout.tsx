@@ -1,20 +1,20 @@
 import type { Metadata } from 'next'
+import { inter, roboto, okayJelly } from './fonts/fonts'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.dev',
+  title: 'TOAD - Trustless On-Chain Autonomous Delegate',
+  description: 'Smoothing DAO governance by absorbing community sentiment and empowering users with AI-driven delegation.',
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className={`${inter.variable} ${roboto.variable} ${okayJelly.variable}`}>
+      <body className={inter.className}>{children}</body>
     </html>
   )
 }

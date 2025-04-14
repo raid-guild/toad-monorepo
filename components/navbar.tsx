@@ -11,37 +11,29 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-green-900/80 backdrop-blur-md border-b dark:border-green-800">
+    <nav className="fixed top-0 left-0 right-0 z-50">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2 bg-green-600 px-4 py-2 rounded-lg">
           <div className="relative h-10 w-10">
             <Image src="/logo.png" alt="TOAD Logo" fill className="object-contain" priority />
           </div>
-          <span className="font-bold text-xl text-green-800 dark:text-green-300">TOAD</span>
+          <span className="font-bold text-2xl text-white font-okay-jelly leading-none">TOAD</span>
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-8">
-          <Link
-            href="#about"
-            className="text-gray-700 dark:text-green-100 hover:text-green-600 dark:hover:text-green-300 transition-colors"
-          >
-            About
-          </Link>
-          <Link
-            href="#ecosystem"
-            className="text-gray-700 dark:text-green-100 hover:text-green-600 dark:hover:text-green-300 transition-colors"
-          >
-            Ecosystem
-          </Link>
-          <Link
-            href="#contact"
-            className="text-gray-700 dark:text-green-100 hover:text-green-600 dark:hover:text-green-300 transition-colors"
-          >
-            Contact
-          </Link>
-          <ThemeToggle />
-          <Button className="bg-green-600 hover:bg-green-700 text-white">Get Started</Button>
+        <div className="hidden md:flex items-center gap-4">
+          <Button variant="ghost" className="bg-gray-50 hover:bg-green-600 text-gray-700 hover:text-white transition-colors">
+            <Link href="#about">About</Link>
+          </Button>
+          <Button variant="ghost" className="bg-gray-50 hover:bg-green-600 text-gray-700 hover:text-white transition-colors">
+            <Link href="#ecosystem">Ecosystem</Link>
+          </Button>
+          <Button variant="ghost" className="bg-gray-50 hover:bg-green-600 text-gray-700 hover:text-white transition-colors">
+            <Link href="#contact">Contact</Link>
+          </Button>
+          <Button className="bg-green-600 hover:bg-green-700 text-white">
+            <Link href="#get-started">Get Started</Link>
+          </Button>
         </div>
 
         {/* Mobile Menu Button */}
