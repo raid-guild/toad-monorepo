@@ -16,9 +16,9 @@ export default function Hero() {
       </div>
 
       <div className="container mx-auto px-4 h-screen flex items-center justify-center relative z-10">
-        <div className="max-w-5xl mx-auto text-center">
-          <h1 className="text-8xl md:text-9xl lg:text-[18rem] font-bold text-green-800 dark:text-green-300 mb-6 font-okay-jelly">TOAD</h1>
-          <p className="text-xl md:text-2xl font-medium text-gray-700 dark:text-green-100">
+        <div className="max-w-5xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+          <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-[18rem] font-bold text-green-800 dark:text-green-300 mb-4 sm:mb-6 font-okay-jelly leading-tight">TOAD</h1>
+          <p className="text-lg sm:text-xl md:text-2xl font-medium text-gray-700 dark:text-green-100 max-w-2xl mx-auto">
             Trustless On-Chain Autonomous Delegate
           </p>
         </div>
