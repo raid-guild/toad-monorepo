@@ -26,9 +26,6 @@ export default function Navbar() {
             <Link href="#about">About</Link>
           </Button>
           <Button variant="ghost" className="bg-gray-50 hover:bg-green-600 text-gray-700 hover:text-white transition-colors">
-            <Link href="#ecosystem">Ecosystem</Link>
-          </Button>
-          <Button variant="ghost" className="bg-gray-50 hover:bg-green-600 text-gray-700 hover:text-white transition-colors">
             <Link href="#contact">Contact</Link>
           </Button>
           <Button className="bg-green-600 hover:bg-green-700 text-white">
@@ -52,13 +49,6 @@ export default function Navbar() {
               onClick={() => setIsMenuOpen(false)}
             >
               About
-            </Link>
-            <Link
-              href="#ecosystem"
-              className="text-gray-700 dark:text-green-100 hover:text-green-600 dark:hover:text-green-300 transition-colors py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Ecosystem
             </Link>
             <Link
               href="#contact"
