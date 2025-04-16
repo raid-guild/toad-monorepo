@@ -6,23 +6,23 @@ export default function About() {
     <section id="about" className="py-20">
       {/* About - Light */}
       <div className="bg-white dark:bg-green-900 py-20">
-        <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="grid grid-cols-3 gap-8">
               <div className="col-span-1 flex items-center">
                 <h2 className="text-3xl md:text-4xl font-bold text-green-800 dark:text-green-300 font-okay-jelly">About</h2>
               </div>
               <div className="col-span-2">
-                <div className="h-full border-l-2 border-green-200 dark:border-green-700 pl-8">
+                <div className="h-full">
                   <h3 className="text-2xl font-semibold text-green-800 dark:text-green-300 mb-4">What is TOAD?</h3>
                   <p className="text-lg text-gray-600 dark:text-green-200 mb-8">
                     TOAD (Trustless Onchain Autonomous Delegate) is an AI-powered voting delegate system that revolutionizes DAO governance. Operating as an autonomous agent, TOAD analyzes proposals, gathers community sentiment, and casts votes with delegated power, serving as a crucial step toward AI-governed DAOs.
                   </p>
 
                   <h3 className="text-2xl font-semibold text-green-800 dark:text-green-300 mb-4">Mission</h3>
-                  <p className="text-lg text-gray-600 dark:text-green-200">
+          <p className="text-lg text-gray-600 dark:text-green-200">
                     TOAD exists to democratize governance by creating an unbiased, accessible bridge between communities and their decision-making processes. We're building the future of decentralized governance where technology amplifies collective wisdom rather than replacing it.
-                  </p>
+          </p>
                 </div>
               </div>
             </div>
@@ -39,7 +39,7 @@ export default function About() {
                 <h2 className="text-3xl md:text-4xl font-bold text-green-800 dark:text-green-300 font-okay-jelly">Values</h2>
               </div>
               <div className="col-span-2">
-                <div className="h-full border-l-2 border-green-200 dark:border-green-700 pl-8">
+                <div className="h-full">
                   <div className="grid grid-cols-1 gap-6">
                     <Card className="border-green-100 dark:border-green-700 dark:bg-green-800 shadow-sm hover:shadow-md transition-shadow">
                       <CardContent className="pt-6">
@@ -81,9 +81,9 @@ export default function About() {
                       </CardContent>
                     </Card>
 
-                    <Card className="border-green-100 dark:border-green-700 dark:bg-green-800 shadow-sm hover:shadow-md transition-shadow">
-                      <CardContent className="pt-6">
-                        <div className="bg-green-50 dark:bg-green-700/50 p-3 rounded-full w-fit mb-4">
+          <Card className="border-green-100 dark:border-green-700 dark:bg-green-800 shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="pt-6">
+              <div className="bg-green-50 dark:bg-green-700/50 p-3 rounded-full w-fit mb-4">
                           <Sparkles className="h-6 w-6 text-green-600 dark:text-green-300" />
                         </div>
                         <h4 className="text-xl font-semibold text-green-800 dark:text-green-300 mb-2">Innovation</h4>
@@ -107,7 +107,7 @@ export default function About() {
                 <h2 className="text-3xl md:text-4xl font-bold text-green-800 dark:text-green-300 font-okay-jelly">Features</h2>
               </div>
               <div className="col-span-2">
-                <div className="h-full border-l-2 border-green-200 dark:border-green-700 pl-8">
+                <div className="h-full">
                   <div className="grid grid-cols-1 gap-8">
                     <Card className="border-green-100 dark:border-green-700 dark:bg-green-800 shadow-sm hover:shadow-md transition-shadow">
                       <CardContent className="pt-6">
@@ -116,14 +116,14 @@ export default function About() {
                         </div>
                         <h4 className="text-xl font-semibold text-green-800 dark:text-green-300 mb-2">AI Analysis Engine</h4>
                         <p className="text-gray-600 dark:text-green-100">Processes proposals, discussions, and sentiment using advanced LLM technology</p>
-                      </CardContent>
-                    </Card>
+            </CardContent>
+          </Card>
 
-                    <Card className="border-green-100 dark:border-green-700 dark:bg-green-800 shadow-sm hover:shadow-md transition-shadow">
-                      <CardContent className="pt-6">
-                        <div className="bg-green-50 dark:bg-green-700/50 p-3 rounded-full w-fit mb-4">
-                          <Vote className="h-6 w-6 text-green-600 dark:text-green-300" />
-                        </div>
+          <Card className="border-green-100 dark:border-green-700 dark:bg-green-800 shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="pt-6">
+              <div className="bg-green-50 dark:bg-green-700/50 p-3 rounded-full w-fit mb-4">
+                <Vote className="h-6 w-6 text-green-600 dark:text-green-300" />
+              </div>
                         <h4 className="text-xl font-semibold text-green-800 dark:text-green-300 mb-2">Smart Contract Integration</h4>
                         <p className="text-gray-600 dark:text-green-100">Direct on-chain voting through secure wallet infrastructure</p>
                       </CardContent>
@@ -136,22 +136,22 @@ export default function About() {
                         </div>
                         <h4 className="text-xl font-semibold text-green-800 dark:text-green-300 mb-2">Cross-Platform Monitoring</h4>
                         <p className="text-gray-600 dark:text-green-100">Tracks governance activity across Tally, social media, and forums</p>
-                      </CardContent>
-                    </Card>
+            </CardContent>
+          </Card>
 
-                    <Card className="border-green-100 dark:border-green-700 dark:bg-green-800 shadow-sm hover:shadow-md transition-shadow">
-                      <CardContent className="pt-6">
-                        <div className="bg-green-50 dark:bg-green-700/50 p-3 rounded-full w-fit mb-4">
+          <Card className="border-green-100 dark:border-green-700 dark:bg-green-800 shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="pt-6">
+              <div className="bg-green-50 dark:bg-green-700/50 p-3 rounded-full w-fit mb-4">
                           <Eye className="h-6 w-6 text-green-600 dark:text-green-300" />
-                        </div>
+              </div>
                         <h4 className="text-xl font-semibold text-green-800 dark:text-green-300 mb-2">Transparent Decision Logic</h4>
                         <p className="text-gray-600 dark:text-green-100">Provides reasoning before voting occurs</p>
-                      </CardContent>
-                    </Card>
+            </CardContent>
+          </Card>
 
-                    <Card className="border-green-100 dark:border-green-700 dark:bg-green-800 shadow-sm hover:shadow-md transition-shadow">
-                      <CardContent className="pt-6">
-                        <div className="bg-green-50 dark:bg-green-700/50 p-3 rounded-full w-fit mb-4">
+          <Card className="border-green-100 dark:border-green-700 dark:bg-green-800 shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="pt-6">
+              <div className="bg-green-50 dark:bg-green-700/50 p-3 rounded-full w-fit mb-4">
                           <Shield className="h-6 w-6 text-green-600 dark:text-green-300" />
                         </div>
                         <h4 className="text-xl font-semibold text-green-800 dark:text-green-300 mb-2">Security-First Design</h4>
@@ -175,7 +175,7 @@ export default function About() {
                 <h2 className="text-3xl md:text-4xl font-bold text-green-800 dark:text-green-300 font-okay-jelly">Solutions</h2>
               </div>
               <div className="col-span-2">
-                <div className="h-full border-l-2 border-green-200 dark:border-green-700 pl-8">
+                <div className="h-full">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                     {/* Community Members Path */}
                     <div className="relative">
