@@ -404,16 +404,19 @@ contract TOADTest is Test {
 
         vm.roll(proposal.validBlock - 3);
 
-        vm.roll(block.number + 1);
-
+        // First delegate to self to establish voting power
         vm.prank(user3);
         mockToken.delegate(user3);
+        vm.roll(block.number + 1);
 
+        // Then set disable power
         vm.prank(user3);
         toad.setDisablePower(tallyIds);
 
+        // Finally delegate to TOAD contract
         vm.prank(user3);
         mockToken.delegate(address(toad));
+        vm.roll(block.number + 1);
 
         vm.prank(user3);
         toad.toggle(tallyIds, user3);
