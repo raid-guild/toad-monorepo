@@ -117,16 +117,16 @@ export class ToadService {
     private async fetchProposalsFromApi(): Promise<ProposalData[]> {
         try {
             console.log('Fetching proposals from TOAD API...');
-            const response = await this.makeRateLimitedRequest<ApiResponse>(`${TOAD_API_ENDPOINT}/proposals`);
+            const response = await this.makeRateLimitedRequest<Array<any>>(`${TOAD_API_ENDPOINT}/proposals`);
 
             // Check if response.data exists and has the correct structure
-            if (!response.proposals?.nodes || !Array.isArray(response.proposals.nodes)) {
+            if (response.length === 0) {
                 console.error('Invalid API response format:', response);
                 return [];
             }
 
             // Validate and transform the data
-            const proposals = response.proposals.nodes.map((proposal: ApiProposal) => {
+            const proposals = response.map((proposal: ApiProposal) => {
                 // Ensure all required fields are present and properly formatted
                 if (!proposal.id || !proposal.start?.timestamp || !proposal.end?.timestamp) {
                     console.error('Invalid proposal data:', proposal);
@@ -150,7 +150,7 @@ export class ToadService {
                     discovered: proposal.discovered || false
                 };
                 return proposalData;
-            }).filter((proposal): proposal is ProposalData => proposal !== null);
+            }).filter((proposal: ProposalData | null): proposal is ProposalData => proposal !== null);
 
             console.log(`Found ${proposals.length} valid proposals`);
             return proposals;
