@@ -66,13 +66,16 @@ error EmptyArrayNotAllowed();
 /// @dev Thrown when attempting to perform an operation that requires the Tally Governor to be set
 error TallyGovernorNotSet();
 
+/// @dev Thrown when attempting to add a duplicate proposal
+error DuplicateProposal();
+
 /**
  * @dev Represents the possible voting options for proposals
  */
 enum Answer {
-    FOR,
-    AGAINST,
-    ABSTAIN
+    AGAINST, // 0 in Governor
+    FOR, // 1 in Governor
+    ABSTAIN // 2 in Governor
 }
 
 /**
@@ -98,6 +101,7 @@ struct Disabler {
 struct Proposal {
     uint tallyId;
     Answer answer;
+    string reason;
     uint discoveredAt;
     uint validBlock;
     uint disablePower;
@@ -112,6 +116,7 @@ struct Proposal {
 struct ProposalView {
     uint tallyId;
     Answer answer;
+    string reason;
     uint discoveredAt;
     uint validBlock;
     uint disablePower;
@@ -124,7 +129,15 @@ struct ProposalView {
  * @param tallyId The ID of the proposal
  * @param answer The final vote decision
  */
-event ResultsAnnounced(uint tallyId, Answer answer);
+event ResultsAnnounced(uint256 indexed tallyId, Answer answer);
+
+/**
+ * @dev Emitted when a vote is cast
+ * @param tallyId The ID of the proposal
+ * @param answer The answer given to the proposal
+ * @param reason The reason for the vote
+ */
+event VoteCast(uint256 indexed tallyId, Answer answer, string reason);
 
 /**
  * @dev Emitted when admin address is changed
@@ -280,37 +293,47 @@ contract TOAD {
     // TOAD functions
 
     /**
-     * @dev Discovers and registers new proposals in the system
-     * @param _tallyIds Array of proposal IDs to register
-     * @param _votingPeriods Array of voting period durations for each proposal
-     * @notice Clears inactive proposals before registering new ones
+     * @dev Discovers new proposals from the Tally Governor
+     * @param _tallyIds Array of proposal IDs to discover
+     * @param _votingPeriods Array of voting periods for each proposal
+     * @notice Only TOAD can call this function
+     * @notice Array lengths must match
      */
     function discoverProposals(
         uint[] memory _tallyIds,
         uint[] memory _votingPeriods
     ) external onlyToad {
+        if (_tallyIds.length == 0) revert EmptyArrayNotAllowed();
         if (_tallyIds.length != _votingPeriods.length)
             revert ArrayLengthsMustMatch();
-        // clear all inactive proposals
-        if (proposals.length > 0) {
-            for (uint i = 0; i < proposals.length; i++) {
-                if (block.number > proposals[i].votingPeriod) {
-                    clearProposalByIndex(i);
-                }
+
+        // Check for duplicate proposals
+        for (uint i = 0; i < _tallyIds.length; i++) {
+            uint index = proposalList[_tallyIds[i]];
+            if (
+                index < proposals.length &&
+                proposals[index].tallyId == _tallyIds[i]
+            ) {
+                revert DuplicateProposal();
             }
         }
 
-        // create new proposals
+        // Add new proposals
         for (uint i = 0; i < _tallyIds.length; i++) {
-            Proposal storage proposal = proposals.push();
-            proposal.tallyId = _tallyIds[i];
-            proposal.answer = Answer.ABSTAIN;
-            proposal.discoveredAt = block.number;
-            proposal.validBlock = block.number + validBlockInterval;
-            proposal.votingPeriod = block.number + _votingPeriods[i];
-            proposal.announced = false;
-            proposal.disablePower = 0;
-            proposalList[_tallyIds[i]] = proposals.length - 1;
+            uint index = proposals.length;
+            proposalList[_tallyIds[i]] = index;
+            proposals.push(
+                Proposal({
+                    tallyId: _tallyIds[i],
+                    answer: Answer.ABSTAIN,
+                    reason: "",
+                    discoveredAt: block.number,
+                    validBlock: block.number + validBlockInterval,
+                    disablePower: 0,
+                    votingPeriod: block.number + _votingPeriods[i],
+                    announced: false
+                })
+            );
         }
     }
 
@@ -322,16 +345,20 @@ contract TOAD {
      */
     function answer(
         uint[] memory _tallyIds,
-        Answer[] memory _answers
+        Answer[] memory _answers,
+        string[] memory _reasons
     ) external onlyToad {
         if (proposals.length == 0) revert NoProposalsToAnswer();
         if (_tallyIds.length != _answers.length) revert ArrayLengthsMustMatch();
+        if (_tallyIds.length != _reasons.length) revert ArrayLengthsMustMatch();
         for (uint i = 0; i < _tallyIds.length; i++) {
             uint index = proposalList[_tallyIds[i]];
             Proposal storage proposal = proposals[index];
             if (block.number >= proposal.validBlock)
                 revert ProposalNotActiveForAnswering();
+
             proposal.answer = _answers[i];
+            proposal.reason = _reasons[i];
         }
     }
 
@@ -389,7 +416,7 @@ contract TOAD {
 
     // Member functions
     /**
-     * @dev Checks if a user has voting power either through delegation to TOAD or token balance
+     * @dev Checks if a user has voting power through delegation
      * @param _address The address to check
      * @return bool Whether the address has voting power
      */
@@ -397,7 +424,20 @@ contract TOAD {
         if (address(tallyGovernor) == address(0)) revert TallyGovernorNotSet();
         if (_address == address(0)) revert ZeroAddressNotAllowed();
         ERC20Votes token = ERC20Votes(address(tallyGovernor.token()));
-        return token.getVotes(_address) > 0 || token.balanceOf(_address) > 0;
+        return token.getVotes(_address) > 0;
+    }
+
+    /**
+     * @dev Checks if an address has delegated to TOAD
+     * @param _address The address to check
+     * @return bool Whether the address has delegated to TOAD
+     */
+    function isMember(address _address) public view returns (bool) {
+        if (address(tallyGovernor) == address(0)) revert TallyGovernorNotSet();
+        if (_address == address(0)) revert ZeroAddressNotAllowed();
+        return
+            ERC20Votes(address(tallyGovernor.token())).delegates(_address) ==
+            address(this);
     }
 
     /**
@@ -411,12 +451,6 @@ contract TOAD {
         uint votingPower = ERC20Votes(address(tallyGovernor.token())).getVotes(
             msg.sender
         );
-
-        if (votingPower == 0) {
-            votingPower = ERC20Votes(address(tallyGovernor.token())).balanceOf(
-                msg.sender
-            );
-        }
 
         for (uint i = 0; i < _tallyIds.length; i++) {
             uint index = proposalList[_tallyIds[i]];
@@ -509,19 +543,6 @@ contract TOAD {
     }
 
     /**
-     * @dev Checks if an address has delegated to TOAD
-     * @param _address The address to check
-     * @return bool Whether the address has delegated to TOAD
-     */
-    function isMember(address _address) public view returns (bool) {
-        if (address(tallyGovernor) == address(0)) revert TallyGovernorNotSet();
-        if (_address == address(0)) revert ZeroAddressNotAllowed();
-        return
-            ERC20Votes(address(tallyGovernor.token())).delegates(_address) ==
-            toad;
-    }
-
-    /**
      * @dev Retrieves a proposal by its ID
      * @param _tallyId The ID of the proposal to retrieve
      * @return The proposal data without the disablers mapping
@@ -535,11 +556,61 @@ contract TOAD {
             ProposalView({
                 tallyId: proposal.tallyId,
                 answer: proposal.answer,
+                reason: proposal.reason,
                 discoveredAt: proposal.discoveredAt,
                 validBlock: proposal.validBlock,
                 disablePower: proposal.disablePower,
                 votingPeriod: proposal.votingPeriod,
                 announced: proposal.announced
             });
+    }
+
+    /**
+     * @dev Casts votes on proposals using stored answers
+     * @param _tallyIds Array of proposal IDs to vote on
+     * @notice Only TOAD can call this function
+     * @notice TOAD must be able to vote on the proposals (checked via canVote)
+     */
+    function vote(uint[] memory _tallyIds) external onlyToad {
+        if (_tallyIds.length == 0) revert EmptyArrayNotAllowed();
+
+        // Check if TOAD can vote on all proposals
+        bool[] memory canVoteResults = canVote(_tallyIds);
+        for (uint i = 0; i < _tallyIds.length; i++) {
+            if (!canVoteResults[i]) {
+                revert ProposalNotActiveForAnswering();
+            }
+        }
+
+        // Get answers and reasons for each proposal
+        Answer[] memory answers = new Answer[](_tallyIds.length);
+        string[] memory reasons = new string[](_tallyIds.length);
+        for (uint i = 0; i < _tallyIds.length; i++) {
+            uint index = proposalList[_tallyIds[i]];
+            Proposal storage proposal = proposals[index];
+            answers[i] = proposal.answer;
+            reasons[i] = proposal.reason;
+        }
+
+        // Cast votes using the Tally Governor
+        for (uint i = 0; i < _tallyIds.length; i++) {
+            // Map our Answer enum to Governor voting values
+            uint8 governorVote;
+            if (answers[i] == Answer.FOR) {
+                governorVote = 1; // FOR in Governor
+            } else if (answers[i] == Answer.AGAINST) {
+                governorVote = 0; // AGAINST in Governor
+            } else {
+                governorVote = 2; // ABSTAIN in Governor
+            }
+
+            tallyGovernor.castVoteWithReason(
+                _tallyIds[i],
+                governorVote,
+                reasons[i]
+            );
+
+            emit VoteCast(_tallyIds[i], answers[i], reasons[i]);
+        }
     }
 }
