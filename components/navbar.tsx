@@ -53,22 +53,28 @@ export default function Navbar() {
             {isGetStartedOpen && (
               <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-green-900 rounded-lg shadow-lg border border-gray-200 dark:border-green-800">
                 <a
-                  href="#arbitrum"
+                  href="https://arbitrum.toadn.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-green-800 transition-colors"
                   onClick={(e) => {
                     e.preventDefault();
                     setIsGetStartedOpen(false);
+                    window.open('https://arbitrum.toadn.com', '_blank');
                   }}
                 >
                   <Image src="/arbitrum-logo.svg" alt="Arbitrum" width={20} height={20} />
                   Arbitrum
                 </a>
                 <a
-                  href="#optimism"
+                  href="https://optimism.toadn.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-green-800 transition-colors"
                   onClick={(e) => {
                     e.preventDefault();
                     setIsGetStartedOpen(false);
+                    window.open('https://optimism.toadn.com', '_blank');
                   }}
                 >
                   <Image src="/optimism-logo.svg" alt="Optimism" width={20} height={20} />
@@ -108,11 +114,17 @@ export default function Navbar() {
           </a>
           <ThemeToggle />
           <div className="flex flex-col gap-2">
-            <Button className="bg-green-600 hover:bg-green-700 text-white w-full flex items-center justify-center gap-2">
+            <Button 
+              className="bg-green-600 hover:bg-green-700 text-white w-full flex items-center justify-center gap-2"
+              onClick={() => window.open('https://arbitrum.toadn.com', '_blank')}
+            >
               <Image src="/arbitrum-logo.svg" alt="Arbitrum" width={20} height={20} />
               Arbitrum
             </Button>
-            <Button className="bg-green-600 hover:bg-green-700 text-white w-full flex items-center justify-center gap-2">
+            <Button 
+              className="bg-green-600 hover:bg-green-700 text-white w-full flex items-center justify-center gap-2"
+              onClick={() => window.open('https://optimism.toadn.com', '_blank')}
+            >
               <Image src="/optimism-logo.svg" alt="Optimism" width={20} height={20} />
               Optimism
             </Button>
