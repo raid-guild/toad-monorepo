@@ -9,12 +9,12 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div className="relative h-10 w-10 bg-white dark:bg-green-800 rounded-full p-1">
-                <Image src="/logo.png" alt="TOAD Logo" fill className="object-contain dark:invert" />
+              <div className="relative h-10 w-10">
+                <Image src="/logo_trans_w.png" alt="TOAD Logo" fill className="object-contain" />
               </div>
-              <span className="font-bold text-xl">TOAD</span>
+              <span className="font-bold text-xl font-okay-jelly">TOAD</span>
             </div>
-            <p className="text-green-100 dark:text-green-100 mb-4">Trustless On-Chain Autonomous Delegate</p>
+            
             <div className="flex gap-4">
               <Link
                 href="https://github.com"
@@ -24,7 +24,7 @@ export default function Footer() {
                 <Github className="h-6 w-6" />
               </Link>
               <Link
-                href="https://twitter.com"
+                href="https://x.com/0xtoadn"
                 target="_blank"
                 className="text-white hover:text-green-200 transition-colors"
               >

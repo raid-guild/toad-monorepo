@@ -1,0 +1,16 @@
+{
+  "name": "TOAD - Trustless On-Chain Autonomous Delegate",
+  "short_name": "TOAD",
+  "description": "An AI-powered voting delegate system that revolutionizes DAO governance",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+} 

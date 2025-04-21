@@ -3,12 +3,13 @@
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Menu, X } from "lucide-react"
+import { Menu, X, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import ThemeToggle from "@/components/theme-toggle"
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isGetStartedOpen, setIsGetStartedOpen] = useState(false)
 
   const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     e.preventDefault()
@@ -41,9 +42,41 @@ export default function Navbar() {
           <Button variant="ghost" className="bg-gray-50 hover:bg-green-600 text-gray-700 hover:text-white transition-colors">
             <a href="#contact" onClick={(e) => handleScroll(e, 'contact')}>Contact</a>
           </Button>
-          <Button className="bg-green-600 hover:bg-green-700 text-white">
-            <a href="#get-started" onClick={(e) => handleScroll(e, 'get-started')}>Get Started</a>
-          </Button>
+          <div className="relative">
+            <Button 
+              className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+              onClick={() => setIsGetStartedOpen(!isGetStartedOpen)}
+            >
+              Get Started
+              <ChevronDown className={`h-4 w-4 transition-transform ${isGetStartedOpen ? 'rotate-180' : ''}`} />
+            </Button>
+            {isGetStartedOpen && (
+              <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-green-900 rounded-lg shadow-lg border border-gray-200 dark:border-green-800">
+                <a
+                  href="#arbitrum"
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-green-800 transition-colors"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsGetStartedOpen(false);
+                  }}
+                >
+                  <Image src="/arbitrum-logo.svg" alt="Arbitrum" width={20} height={20} />
+                  Arbitrum
+                </a>
+                <a
+                  href="#optimism"
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-green-800 transition-colors"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsGetStartedOpen(false);
+                  }}
+                >
+                  <Image src="/optimism-logo.svg" alt="Optimism" width={20} height={20} />
+                  Optimism
+                </a>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Mobile Menu Button */}
@@ -74,9 +107,16 @@ export default function Navbar() {
             Contact
           </a>
           <ThemeToggle />
-          <Button className="bg-green-600 hover:bg-green-700 text-white w-full">
-            <a href="#get-started" onClick={(e) => handleScroll(e, 'get-started')}>Get Started</a>
-          </Button>
+          <div className="flex flex-col gap-2">
+            <Button className="bg-green-600 hover:bg-green-700 text-white w-full flex items-center justify-center gap-2">
+              <Image src="/arbitrum-logo.svg" alt="Arbitrum" width={20} height={20} />
+              Arbitrum
+            </Button>
+            <Button className="bg-green-600 hover:bg-green-700 text-white w-full flex items-center justify-center gap-2">
+              <Image src="/optimism-logo.svg" alt="Optimism" width={20} height={20} />
+              Optimism
+            </Button>
+          </div>
         </div>
       </div>
     </nav>
