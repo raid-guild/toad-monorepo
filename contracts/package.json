@@ -1,0 +1,18 @@
+{
+    "name": "toad-contracts",
+    "version": "1.0.0",
+    "description": "TOAD DAO Contracts",
+    "scripts": {
+        "discover-proposals": "sh scripts/discover-proposals.sh",
+        "build": "docker build -t toad-discover-proposals .",
+        "start": "docker run -d --name toad-discover-proposals toad-discover-proposals",
+        "stop": "docker stop toad-discover-proposals && docker rm toad-discover-proposals",
+        "logs": "docker logs -f toad-discover-proposals"
+    },
+    "dependencies": {
+        "@openzeppelin/contracts": "^4.9.0",
+        "ethers": "^5.7.2",
+        "ts-node": "^10.9.1",
+        "typescript": "^4.9.5"
+    }
+}
