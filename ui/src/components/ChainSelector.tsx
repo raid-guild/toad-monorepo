@@ -1,5 +1,5 @@
 import { useChainId } from 'wagmi';
-import { supportedChains } from '@/config/chains';
+import { supportedChains } from '@/config/constants';
 
 export function ChainSelector() {
     const chainId = useChainId();

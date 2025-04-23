@@ -5,6 +5,7 @@ import {
     getProposalByIdParameters,
     getProposalByNameParameters,
 } from "./parameters";
+import { z } from "zod";
 
 export type TallyOptions = {
     apiKey: string;
@@ -30,6 +31,16 @@ export class TallyPlugin extends PluginBase {
                 parameters: getAllProposalsParameters.schema,
             }, async (parameters) => {
                 return await this.tallyService.getAllProposals(parameters);
+            }),
+
+            createTool({
+                name: "tally_proposalcount",
+                description: "Gets the total number of proposals for the current governance organization from Tally",
+                parameters: z.object({
+                    dummy: z.string().describe("Dummy parameter to satisfy CoreTool type")
+                }),
+            }, async () => {
+                return await this.tallyService.getProposalCount();
             }),
 
             createTool({

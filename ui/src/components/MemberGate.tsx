@@ -1,15 +1,21 @@
+'use client'
+
 import { useAccount, useReadContract, useChainId, useWatchContractEvent } from 'wagmi';
-import { supportedChains } from '@/config/chains';
+import { supportedChains } from '@/config/constants';
 import { contracts } from '../config/constants';
 import TOAD_ABI from '../../public/abi/TOAD.json';
 import ERC20Votes_ABI from '../../public/abi/ERC20Votes.json';
-import React from 'react';
-
+import React, { useState, useEffect } from 'react';
 
 export function MemberGate({ children }: { children: React.ReactNode }) {
+    const [mounted, setMounted] = useState(false);
     const { address } = useAccount();
     const chainId = useChainId();
     const isSupported = supportedChains.some(chain => chain.id === chainId);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const { data: isMember, isLoading, error, refetch } = useReadContract({
         address: contracts.toad,
@@ -20,6 +26,17 @@ export function MemberGate({ children }: { children: React.ReactNode }) {
             enabled: !!address && !!contracts.toad
         }
     });
+
+    // Add logging for membership check
+    useEffect(() => {
+        console.log('MemberGate - Membership check:', {
+            address,
+            isMember,
+            isLoading,
+            error,
+            contractAddress: contracts.toad
+        });
+    }, [address, isMember, isLoading, error]);
 
     // Watch for delegation events
     useWatchContractEvent({
@@ -40,6 +57,10 @@ export function MemberGate({ children }: { children: React.ReactNode }) {
             console.error('Contract read failed:', error);
         }
     }, [error]);
+
+    if (!mounted) {
+        return null;
+    }
 
     if (!address) {
         return (
