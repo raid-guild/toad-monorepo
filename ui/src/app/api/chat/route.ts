@@ -1,6 +1,6 @@
 import { openai } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { LanguageModelV1, streamText } from 'ai';
+import { generateText, LanguageModelV1, streamText } from 'ai';
 import { tally } from "../../../plugins/tally/src";
 import { discourse } from "../../../plugins/discourse/src";
 import { toad } from "../../../plugins/toad/src";
@@ -87,8 +87,6 @@ export async function POST(req: Request) {
         ],
     });
 
-    console.log("thinking...");
-
     // Stream the response from the OpenAI API
     const result = streamText({
         model: model as LanguageModelV1,
@@ -96,9 +94,6 @@ export async function POST(req: Request) {
         maxSteps: 10,
         system: `You are a helpful assistant that can answer questions about the governance organization: ${config.organizationName}. ${config.organizationDescription}`,
         messages,
-        onStepFinish: (event) => {
-            console.log(event.text);
-        },
     });
 
     return result.toDataStreamResponse();

@@ -17,7 +17,14 @@ interface ProposalView {
     announced: boolean;
 }
 
-async function checkProposalDiscovery(tallyProposals: any[]) {
+interface TallyProposal {
+    id: string;
+    status?: {
+        active: boolean;
+    };
+}
+
+async function checkProposalDiscovery(tallyProposals: TallyProposal[]) {
     const client = createPublicClient({
         chain: optimism,
         transport: http(process.env.RPC_PROVIDER_URL),
@@ -68,7 +75,7 @@ async function checkProposalDiscovery(tallyProposals: any[]) {
                     active: proposal.status?.active ?? false
                 }
             };
-        } catch (error) {
+        } catch {
             return {
                 ...proposal,
                 discovered: false,

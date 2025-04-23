@@ -1,6 +1,6 @@
 'use client'
 
-import { useChat } from '@ai-sdk/react'
+import { useChat } from 'ai/react'
 import { Navigation } from '@/components/Navigation'
 import { Chat } from '@/components/Chat'
 import { useApp } from '@/context/AppContext'

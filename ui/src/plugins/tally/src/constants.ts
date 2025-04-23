@@ -55,25 +55,25 @@ export const proposalsQuery = `query Proposals($governorId: AccountID, $sort:Pro
   }`
   
 export const organizationQuery = `query Organization($input: OrganizationInput!) {
-      organization(input: $input) {
-            id
-            slug
-            name
-            chainIds
-        tokenIds
-        governorIds
-        metadata {
-          color
-          description
-          icon
-        }
-        hasActiveProposals
-        proposalsCount
-        delegatesCount
-        delegatesVotesCount
-        tokenOwnersCount
-      }
-    }`
+  organization(input: $input) {
+    id
+    slug
+    name
+    chainIds
+    tokenIds
+    governorIds
+    metadata {
+      color
+      description
+      icon
+    }
+    hasActiveProposals
+    proposalsCount
+    delegatesCount
+    delegatesVotesCount
+    tokenOwnersCount
+  }
+}`
   
 export const proposalQuery = `query Proposal($input: ProposalInput!) {
     proposal(input: $input) {

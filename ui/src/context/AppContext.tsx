@@ -18,14 +18,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const clearError = () => setError(null);
 
+    const value = {
+        isLoading,
+        setIsLoading,
+        error,
+        setError,
+        clearError
+    };
+
     return (
-        <AppContext.Provider value={{
-            isLoading,
-            setIsLoading,
-            error,
-            setError,
-            clearError
-        }}>
+        <AppContext.Provider value={value}>
             {children}
         </AppContext.Provider>
     );

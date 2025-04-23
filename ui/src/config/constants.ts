@@ -1,10 +1,11 @@
 // This file will be loaded at runtime
+import { Chain } from 'wagmi/chains';
 
 // Contract addresses
 export const contracts = {
     toad: process.env.NEXT_PUBLIC_TOAD_CONTRACT_ADDRESS as `0x${string}`,
     governance: process.env.NEXT_PUBLIC_GOVERNANCE_TOKEN_ADDRESS as `0x${string}`,
-    multicall: process.env.MULTICALL_ADDRESS as `0x${string}`,
+    multicall: process.env.NEXT_PUBLIC_MULTICALL_ADDRESS as `0x${string}`,
 } as const;
 
 // API Keys and Secrets
@@ -22,10 +23,40 @@ console.log('WalletConnect Project ID:', process.env.NEXT_PUBLIC_WALLET_CONNECT_
 export const config = {
     organizationName: process.env.NEXT_PUBLIC_GOVERNANCE_ORGANIZATION_NAME as string,
     organizationDescription: process.env.ORGANIZATION_DESCRIPTION as string,
-    chainId: process.env.CHAIN_ID as string,
-    rpcProviderUrl: process.env.RPC_PROVIDER_URL as string,
+    chainId: process.env.NEXT_PUBLIC_CHAIN_ID as string,
+    rpcProviderUrl: process.env.NEXT_PUBLIC_RPC_URL as string,
     walletPrivateKey: process.env.WALLET_PRIVATE_KEY as `0x${string}`,
 } as const;
+
+const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID);
+const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL as string;
+
+if (!chainId || !rpcUrl) {
+    console.error('Environment variables:', {
+        NEXT_PUBLIC_SUPPORTED_CHAINS: process.env.NEXT_PUBLIC_SUPPORTED_CHAINS
+    });
+    throw new Error('Chain ID and RPC URL must be configured');
+}
+
+const customChain: Chain = {
+    id: chainId,
+    name: process.env.NEXT_PUBLIC_CHAIN_NAME || 'Custom Chain',
+    nativeCurrency: {
+        name: process.env.NEXT_PUBLIC_CHAIN_CURRENCY_NAME || 'ETH',
+        symbol: process.env.NEXT_PUBLIC_CHAIN_CURRENCY_SYMBOL || 'ETH',
+        decimals: Number(process.env.NEXT_PUBLIC_CHAIN_CURRENCY_DECIMALS) || 18,
+    },
+    rpcUrls: {
+        default: { http: [rpcUrl] },
+        public: { http: [rpcUrl] },
+    },
+    blockExplorers: process.env.NEXT_PUBLIC_BLOCK_EXPLORER_URL ? {
+        default: { name: 'Explorer', url: process.env.NEXT_PUBLIC_BLOCK_EXPLORER_URL },
+    } : undefined,
+    testnet: false,
+};
+
+export const supportedChains: readonly [Chain, ...Chain[]] = [customChain];
 
 // OpenAI Configuration
 export const openaiConfig = {
@@ -42,7 +73,7 @@ export const gaiaConfig = {
 // Discourse Configuration
 export const discourseConfig = {
     apiUsername: process.env.DISCOURSE_API_USERNAME as string,
-    baseUrl: process.env.DISCOURSE_BASE_URL as string,
+    baseUrl: process.env.NEXT_PUBLIC_DISCOURSE_BASE_URL as string,
 } as const;
 
 // URLs and External Services
@@ -58,13 +89,13 @@ export const hasRequiredEnvVars = () => {
         'NEXT_PUBLIC_GOVERNANCE_TOKEN_ADDRESS',
         'TALLY_API_KEY',
         'NEXT_PUBLIC_GOVERNANCE_ORGANIZATION_NAME',
-        'CHAIN_ID',
-        'RPC_URL',
+        'NEXT_PUBLIC_CHAIN_ID',
+        'NEXT_PUBLIC_RPC_URL',
         'WALLET_PRIVATE_KEY',
         'OPENAI_API_KEY',
         // 'DISCOURSE_API_KEY',
         // 'DISCOURSE_API_USERNAME',
-        'DISCOURSE_BASE_URL',
+        'NEXT_PUBLIC_DISCOURSE_BASE_URL',
     ];
 
     const missingVars = requiredVars.filter(varName => !process.env[varName]);
