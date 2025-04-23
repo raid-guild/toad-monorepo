@@ -1,5 +1,5 @@
 import { TallyApi } from "./api";
-import { getAllProposalsParameters, getProposalByIdParameters, getProposalByNameParameters } from "./parameters";
+import { getAllProposalsParameters, getProposalByIdParameters } from "./parameters";
 import { organizationQuery, proposalsQuery, proposalQuery } from "./constants";
 
 
@@ -165,7 +165,7 @@ export class TallyService {
         return proposalResponse || null;
     }
 
-    async getProposalByName(parameters: getProposalByNameParameters) {
+    async getProposalByName() {
         return "You can only request Tally proposals by id. Try using the getProposalById method.";
     }
 }
