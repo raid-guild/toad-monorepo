@@ -16,12 +16,6 @@ export class getProposalByIdParameters extends createToolParameters(
     }),
 ) { }
 
-export class getProposalByNameParameters extends createToolParameters(
-    z.object({
-        name: z.string().describe("The name of the proposal to fetch"),
-    }),
-) { }
-
 export class generateGraphQLQueryParameters extends createToolParameters(
     z.object({
         request: z.string().describe("The user request in natural language"),

@@ -1,6 +1,6 @@
 import { openai } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { generateText, LanguageModelV1, streamText } from 'ai';
+import { LanguageModelV1, streamText } from 'ai';
 import { tally } from "../../../plugins/tally/src";
 import { discourse } from "../../../plugins/discourse/src";
 import { toad } from "../../../plugins/toad/src";

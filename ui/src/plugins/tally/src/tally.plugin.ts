@@ -3,7 +3,6 @@ import { TallyService } from "./tally.service";
 import {
     getAllProposalsParameters,
     getProposalByIdParameters,
-    getProposalByNameParameters,
 } from "./parameters";
 import { z } from "zod";
 
@@ -54,9 +53,11 @@ export class TallyPlugin extends PluginBase {
             createTool({
                 name: "tally_proposalbyname",
                 description: "Fetches details of a proposal for the current governance organization by name from Tally",
-                parameters: getProposalByNameParameters.schema,
-            }, async (parameters) => {
-                return this.tallyService.getProposalByName(parameters);
+                parameters: z.object({
+                    dummy: z.string().describe("Dummy parameter to satisfy CoreTool type")
+                }),
+            }, async () => {
+                return this.tallyService.getProposalByName();
             })
         ];
     }
