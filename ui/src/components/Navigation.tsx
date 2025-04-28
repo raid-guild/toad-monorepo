@@ -23,12 +23,33 @@ export function Navigation({ onDelegateVotes }: NavigationProps) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [showDisableToad, setShowDisableToad] = useState(false);
     const [isConnectButtonLoading, setIsConnectButtonLoading] = useState(true);
+    const [isDarkMode, setIsDarkMode] = useState(false);
     const { address, isConnected, status } = useAccount();
     const { delegateVotes } = useGovernance();
 
     useEffect(() => {
         setMounted(true);
+        // Check system preference and localStorage for dark mode
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const savedMode = localStorage.getItem('darkMode');
+        setIsDarkMode(savedMode ? savedMode === 'true' : prefersDark);
     }, []);
+
+    useEffect(() => {
+        if (!mounted) return;
+
+        if (isDarkMode) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('darkMode', 'true');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('darkMode', 'false');
+        }
+    }, [isDarkMode, mounted]);
+
+    const toggleDarkMode = () => {
+        setIsDarkMode(!isDarkMode);
+    };
 
     // Update loading state based on connection status
     useEffect(() => {
@@ -71,7 +92,7 @@ export function Navigation({ onDelegateVotes }: NavigationProps) {
         if (!isMember) {
             return (
                 <button
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800"
+                    className="flex items-center justify-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800"
                     role="menuitem"
                     onClick={() => handleDelegateVotes(contracts.toad)}
                 >
@@ -86,7 +107,7 @@ export function Navigation({ onDelegateVotes }: NavigationProps) {
         if (!isConnected || !isMember || !address) return null;
         return (
             <button
-                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800"
+                className="flex items-center justify-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800"
                 role="menuitem"
                 onClick={() => handleDelegateVotes(address)}
             >
@@ -99,7 +120,7 @@ export function Navigation({ onDelegateVotes }: NavigationProps) {
         if (!isConnected || !isMember) return null;
         return (
             <button
-                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800"
+                className="flex items-center justify-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800"
                 role="menuitem"
                 onClick={() => setShowDisableToad(true)}
             >
@@ -114,19 +135,24 @@ export function Navigation({ onDelegateVotes }: NavigationProps) {
 
     return (
         <div suppressHydrationWarning>
-            <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 py-4 bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800">
+            <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 py-4 bg-transparent">
                 {/* Logo Section with Dropdown */}
                 <div className="relative">
                     <button
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        className="flex items-center space-x-3 hover:opacity-80 transition-opacity focus:outline-none"
+                        className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 focus:outline-none border-3 border-white"
+                        style={{ backgroundColor: 'var(--primary-light)' }}
                     >
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white text-sm font-bold">
-                            🐸
+                        <div className="w-10 h-10 rounded-full ring-2 ring-white">
+                            <img
+                                src="/toadn-logo.png"
+                                alt="TOAD Logo"
+                                className="w-full h-full rounded-full object-cover"
+                            />
                         </div>
-                        <span className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">TOAD</span>
+                        <span className="text-2xl sm:text-3xl font-okay-jelly text-white tracking-tight leading-none mt-1">TOAD</span>
                         <svg
-                            className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                            className={`w-4 h-4 text-white transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -137,10 +163,30 @@ export function Navigation({ onDelegateVotes }: NavigationProps) {
 
                     {/* Desktop Dropdown Menu */}
                     <div
-                        className={`hidden sm:block absolute top-full left-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-zinc-900 ring-1 ring-black ring-opacity-5 dark:ring-white dark:ring-opacity-10 ${isDropdownOpen ? '' : 'hidden'
-                            }`}
+                        className={`${isDropdownOpen ? 'block' : 'hidden'} sm:block absolute top-full left-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-zinc-900 ring-1 ring-primary-dark`}
                     >
                         <div className="py-1" role="menu" aria-orientation="vertical">
+                            <button
+                                onClick={toggleDarkMode}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 relative"
+                                role="menuitem"
+                            >
+                                <svg
+                                    className="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    {isDarkMode ? (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    ) : (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                    )}
+                                </svg>
+                                <span className="absolute left-1/2 -translate-x-1/2">
+                                    {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                                </span>
+                            </button>
                             {renderDelegateButton()}
                             {renderUndelegateButton()}
                             {renderDisableToadButton()}
@@ -148,7 +194,7 @@ export function Navigation({ onDelegateVotes }: NavigationProps) {
                                 href={urls.tally}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800"
+                                className="flex items-center justify-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800"
                                 role="menuitem"
                             >
                                 View on Tally
@@ -157,7 +203,7 @@ export function Navigation({ onDelegateVotes }: NavigationProps) {
                                 href={urls.discourse}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800"
+                                className="flex items-center justify-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800"
                                 role="menuitem"
                             >
                                 Forum
@@ -188,16 +234,19 @@ export function Navigation({ onDelegateVotes }: NavigationProps) {
 
                 {/* Mobile Menu */}
                 <div
-                    className={`sm:hidden fixed inset-0 z-40 bg-white dark:bg-zinc-900 transform ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-                        } transition-transform duration-200 ease-in-out`}
+                    className={`${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'} sm:hidden fixed inset-0 z-40 bg-white dark:bg-zinc-900 transform transition-transform duration-200 ease-in-out`}
                 >
                     <div className="flex flex-col h-full">
                         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-zinc-800">
-                            <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white text-sm font-bold">
-                                    🐸
+                            <div className="flex items-center space-x-2">
+                                <div className="w-10 h-10 rounded-full ring-2 ring-white">
+                                    <img
+                                        src="/toadn-logo.png"
+                                        alt="TOAD Logo"
+                                        className="w-full h-full rounded-full object-cover"
+                                    />
                                 </div>
-                                <span className="text-xl font-bold text-gray-900 dark:text-white">
+                                <span className="text-2xl font-okay-jelly text-white tracking-tight leading-none mt-0.5">
                                     TOAD
                                 </span>
                             </div>
@@ -219,6 +268,27 @@ export function Navigation({ onDelegateVotes }: NavigationProps) {
                             {renderDelegateButton()}
                             {renderUndelegateButton()}
                             {renderDisableToadButton()}
+                            <button
+                                onClick={toggleDarkMode}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 relative"
+                                role="menuitem"
+                            >
+                                <svg
+                                    className="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    {isDarkMode ? (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    ) : (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                    )}
+                                </svg>
+                                <span className="absolute left-1/2 -translate-x-1/2">
+                                    {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                                </span>
+                            </button>
                             <a
                                 href={urls.tally}
                                 target="_blank"
