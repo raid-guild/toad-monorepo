@@ -163,7 +163,7 @@ export function Navigation({ onDelegateVotes }: NavigationProps) {
 
                     {/* Desktop Dropdown Menu */}
                     <div
-                        className={`${isDropdownOpen ? 'block' : 'hidden'} sm:block absolute top-full left-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-zinc-900 ring-1 ring-primary-dark`}
+                        className={`${isDropdownOpen ? 'block' : 'hidden'} absolute top-full left-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-zinc-900 ring-1 ring-primary-dark`}
                     >
                         <div className="py-1" role="menu" aria-orientation="vertical">
                             <button
