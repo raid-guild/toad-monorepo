@@ -13,7 +13,7 @@ export function Chat({ messages, input, isLoading, onSubmit, onInputChange }: Ch
     return (
         <div className="flex flex-col h-[calc(100vh-4rem)] bg-transparent">
             <div className="flex-1 space-y-4 p-4 pb-24">
-                {messages.map((message) => (
+                {messages.filter(message => message.content.trim()).map((message) => (
                     <div
                         key={message.id}
                         className={`flex flex-col ${message.role === 'assistant' ? 'items-start' : 'items-end'
