@@ -1,10 +1,32 @@
 import { tally } from "../../../plugins/tally/src";
 import { NextResponse } from 'next/server';
 import { apiKeys, config, hasRequiredEnvVars, contracts } from '@/config/constants';
-import { createPublicClient, http, encodeFunctionData, decodeFunctionResult, Abi } from 'viem';
-import { optimism } from 'viem/chains';
+import { createPublicClient, http, encodeFunctionData, decodeFunctionResult, Abi, Chain } from 'viem';
+import { optimism, mainnet, arbitrum } from 'viem/chains';
 import TOAD_ABI from '../../../../public/abi/TOAD.json';
 import MULTICALL_ABI from '../../../../public/abi/Multicall.json';
+import { Proposal } from '@/types/proposal';
+
+const customChain: Chain = {
+    id: Number(process.env.CHAIN_ID),
+    name: 'Custom Chain',
+    nativeCurrency: {
+        name: 'Ether',
+        symbol: 'ETH',
+        decimals: 18,
+    },
+    rpcUrls: {
+        default: {
+            http: [process.env.RPC_URL || ''],
+        },
+    },
+    blockExplorers: {
+        default: {
+            name: 'Custom Explorer',
+            url: '',
+        },
+    },
+};
 
 interface ProposalView {
     tallyId: bigint;
@@ -17,8 +39,7 @@ interface ProposalView {
     announced: boolean;
 }
 
-interface TallyProposal {
-    id: string;
+interface TallyProposal extends Pick<Proposal, 'id'> {
     status?: {
         active: boolean;
     };
@@ -26,13 +47,17 @@ interface TallyProposal {
 
 async function checkProposalDiscovery(tallyProposals: TallyProposal[]) {
     const client = createPublicClient({
-        chain: optimism,
-        transport: http(process.env.RPC_PROVIDER_URL),
+        chain: customChain,
+        transport: http(process.env.RPC_URL),
     });
 
     // Prepare multicall data
+    const toadAddress = process.env.TOAD as `0x${string}`;
+    const multicallAddress = process.env.MULTICALL_ADDRESS as `0x${string}`;
+
+
     const calls = tallyProposals.map((proposal) => ({
-        target: contracts.toad,
+        target: toadAddress,
         callData: encodeFunctionData({
             abi: TOAD_ABI.abi,
             functionName: 'getProposal',
@@ -42,7 +67,7 @@ async function checkProposalDiscovery(tallyProposals: TallyProposal[]) {
 
     // Execute multicall
     const multicallResult = await client.readContract({
-        address: contracts.multicall,
+        address: multicallAddress,
         abi: MULTICALL_ABI as unknown as Abi,
         functionName: 'tryAggregate',
         args: [false, calls],
@@ -91,6 +116,12 @@ async function checkProposalDiscovery(tallyProposals: TallyProposal[]) {
 
 export async function GET() {
     try {
+
+
+        if (!process.env.TOAD || !process.env.MULTICALL_ADDRESS) {
+            throw new Error('Missing required environment variables');
+        }
+
         // Check for required environment variables
         if (!hasRequiredEnvVars()) {
             return NextResponse.json(
@@ -108,16 +139,15 @@ export async function GET() {
 
         // Get all proposals
         const proposals = await tallyService.getTools()[0].execute({
-            name: 'tally_proposals',
-            id: 'all_proposals',
             organization: config.organizationName,
             isDescending: true,
             limit: 50,
             afterCursor: '',
+            id: 'all_proposals',
+            dummy: 'dummy'
         });
 
-        // Check discovery status for each proposal
-        const proposalsWithDiscovery = await checkProposalDiscovery(proposals.proposals.nodes);
+        const proposalsWithDiscovery = await checkProposalDiscovery(proposals as TallyProposal[]);
 
         return NextResponse.json(proposalsWithDiscovery);
     } catch (error) {
