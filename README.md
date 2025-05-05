@@ -144,12 +144,8 @@ networks:
 ```
 
 2. Configure your environment:
-   - Create a `dao.env` file with your environment variables
-   - Update the domain in the docker-compose.yaml file (replace `dao.domain.com` with your actual domain)
-
-3. DNS Configuration:
-   - Point your domain's DNS A record to your server's IP address
-   - If using a subdomain (recommended), create a CNAME record pointing to your main domain
+   - Update the path to the `dao.env` file in the `docker-compose.yaml`
+   - Update the domain in the `docker-compose.yaml` file (replace `dao.domain.com` with your actual domain)
 
 4. Deployment Steps:
    ```bash
